@@ -8,15 +8,17 @@ This workflow supports the system goal defined in `my_first_agent/README.md`.
 
 ### 1.2 Workflow Trigger
 
-[Describe the event, request, schedule, or condition that starts the workflow.]
+The workflow starts when a hackathon organizer enters information about a hackathon and wants help keeping track of the planning process, tasks, and deadlines.
 
 ### 1.3 Completion Condition at Runtime
 
-[Describe how the system knows, on any given run, that this workflow is completed.]
+The workflow is complete when HackTrack has put together a hackathon plan with the main tasks, deadlines, and responsibilities organized and has identified anything that still needs to be reviewed by humans.
 
 ### 1.4 General Workflow
 
-[Describe the overall sequence of tasks in one or two paragraphs. Explain the normal path first, followed by the most important exception paths and human-review points.]
+HackTrack starts by collecting the information provided about the hackathon, like important dates, requirements, tasks, and responsibilities. It then organizes the information and identifies the main tasks that need to be completed before the event. The system puts these tasks in order based on their deadlines and what needs to be done first.
+
+After creating the timeline, HackTrack checks for missing information, conflicts, or deadlines that may not be realistic. If a problem comes up, it sends it for human review instead of making the decision on its own. Once everything is reviewed, the system creates the final hackathon plan that can be used to keep track of progress.
 
 ### 1.5 Workflow Diagram
 
@@ -24,10 +26,13 @@ This workflow supports the system goal defined in `my_first_agent/README.md`.
 
 ```mermaid
 flowchart TD
-    T1["T1: First task"] --> T2["T2: Second task"]
-    T2 --> D1{"Decision condition?"}
-    D1 -->|Yes| T3["T3: Next task"]
-    D1 -->|No| H1["Human review"]
-    H1 --> T3
-    T3 --> C1([C1: Completion state])
+    T1["T1: Collect hackathon information"] --> T2["T2: Organize event details"]
+    T2 --> T3["T3: Identify planning tasks"]
+    T3 --> T4["T4: Set task priorities"]
+    T4 --> T5["T5: Create hackathon timeline"]
+    T5 --> D1{"D1: Are there missing details or conflicts?"}
+    D1 -->|No| T7["T7: Finalize hackathon plan"]
+    D1 -->|Yes| T6["T6: Review issues"]
+    T6 --> T7
+    T7 --> C1([C1: Hackathon plan completed])
 ```
