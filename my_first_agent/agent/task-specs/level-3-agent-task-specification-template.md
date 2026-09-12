@@ -34,14 +34,14 @@ task_owner: "Hackathon organizer"
 - **Source:** T6 Predict participant attendance.
 
 ### Input 2
-Name: Capacity comparison
-Contents: Event capacity, forecasted attendance, and any threshold or capacity risk.
-Source: T7 Compare forecast with event capacity.
+- **Input name:** Capacity comparison
+- **What it contains:** Event capacity, forecasted attendance, and any threshold or capacity risk.
+- **Source:** T7 Compare forecast with event capacity.
 
 ### Input 3
-Name: Event details
-Contents: Event date, format, location, registration status, and planning constraints.
-Source: T1 Collect event details.
+- **Input name:** Event details
+- **What it contains:** Event date, format, location, registration status, and planning constraints.
+- **Source:** T1 Collect event details.
 
 ## 3. Tool Permissions and Boundaries
 
@@ -55,16 +55,17 @@ Source: T1 Collect event details.
 - **Retry limits:** May be attempted up to two times if inputs are inconsistent. After two attempts, hand off the case for human review.
 
 ### Permitted Subtask 2
-Subtask name: Generate organizer recommendations
-Subtask description: Use the identified risk and event details to produce relevant possible actions, such as sending confirmation reminders, increasing outreach, opening or closing a waitlist, or adjusting planning estimates.
-Subtask boundary: May recommend actions only. May not contact participants, alter registrations, spend money, or make final event decisions.
-Retry limits: May be attempted up to two times. If the available information does not support a safe recommendation, hand off to the organizer.
+- **Subtask name:** Generate organizer recommendations
+- **Substask description:** Use the identified risk and event details to produce relevant possible actions, such as sending confirmation reminders, increasing outreach, opening or closing a waitlist, or adjusting planning estimates.
+- **Subtask boundary:** May recommend actions only. May not contact participants, alter registrations, spend money, or make final event decisions.
+- **Retry limits:** May be attempted up to two times. If the available information does not support a safe recommendation, hand off to the organizer.
 
 ### Permitted Subtask 3
-Subtask name: Explain recommendation rationale
-Subtask description: Connect each recommendation to the forecast, capacity comparison, and event details so the organizer can understand why it was suggested.
-Subtask boundary: May summarize the evidence available in the inputs. May not claim certainty or use information not provided by the workflow.
-Retry limits: May be attempted once. If the evidence is missing or unclear, include an unresolved issue for human review.
+- **Subtask name:** Explain recommendation rationale
+- **Substask description:** Connect each recommendation to the forecast, capacity comparison, and event details so the organizer can understand why it was suggested.
+- **Subtask boundary:** May summarize the evidence available in the inputs. May not claim certainty or use information not provided by the workflow.
+- **Retry limits:** May be attempted once. If the evidence is missing or unclear, include an unresolved issue for human review.
+
 **
 
 - **Decision guidance:** After each subtask, use its findings to select the permitted subtask most likely to resolve the most important remaining uncertainty. Do not follow a fixed sequence. If no permitted subtask can make useful progress, stop and hand the case to a person.
