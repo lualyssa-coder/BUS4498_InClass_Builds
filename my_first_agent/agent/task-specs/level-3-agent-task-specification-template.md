@@ -66,8 +66,6 @@ task_owner: "Hackathon organizer"
 - **Subtask boundary:** May summarize the evidence available in the inputs. May not claim certainty or use information not provided by the workflow.
 - **Retry limits:** May be attempted once. If the evidence is missing or unclear, include an unresolved issue for human review.
 
-**
-
 - **Decision guidance:** After each subtask, use its findings to select the permitted subtask most likely to resolve the most important remaining uncertainty. Do not follow a fixed sequence. If no permitted subtask can make useful progress, stop and hand the case to a person.
 
 ## 5. When to Stop or Hand Off to a Human
