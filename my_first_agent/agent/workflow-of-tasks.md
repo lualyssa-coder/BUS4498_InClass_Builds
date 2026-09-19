@@ -27,6 +27,20 @@ Finally, the organizer reviews the forecast and recommendations. After review, H
 [Insert a flowchart showing the tasks in sequence. Label each task with a task number and short name. Show decision branches, loops, review points, and possible stopping conditions. Below is an example of a Mermaid. You can either edit the mermaid below yourself or ask ChatGPT to generate a Mermaid script based on your workflow description above. Give every task a unique ID, such as T1, T2, and T3, and name tasks using a verb and an object in the mermaid.]
 
 ```mermaid
+Yes—this confirms the task names you used are correct:
+
+- `T1: Collect event details`
+- `T2: Collect registration data`
+- `T6: Predict participant attendance`
+- `T7: Compare forecast with event capacity`
+- `T8: Recommend organizer actions`
+- `T9: Review recommendations`
+
+Your task specification matches the workflow, so you do not need to rename any task names.
+
+One correction: remove the extra ``` after `T4 --> T2`. Your complete diagram should be inside one Mermaid code block:
+
+```mermaid
 flowchart TD
     T1["T1: Collect event details"] --> T2["T2: Collect registration data"]
     T2 --> T3["T3: Validate registration records"]
@@ -48,4 +62,5 @@ flowchart TD
     T10 --> D3{"D3: Are new registrations received?"}
     D3 -->|Yes| T2
     D3 -->|No| C1([C1: Attendance forecast complete])
+```
 ```
