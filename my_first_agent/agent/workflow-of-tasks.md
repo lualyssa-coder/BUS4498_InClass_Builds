@@ -63,4 +63,3 @@ flowchart TD
     D3 -->|Yes| T2
     D3 -->|No| C1([C1: Attendance forecast complete])
 ```
-```
