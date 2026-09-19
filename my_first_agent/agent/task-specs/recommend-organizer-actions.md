@@ -32,7 +32,7 @@ task_owner: "Hackathon organizer"
 
 ### Input 4
 
-- **Input name:** 1 status
+- **Input name:** Registration confirmation status
 - **What it contains:** Total registered participants, number and proportion confirmed, and number and proportion unconfirmed.
 - **Source:** T2 Collect registration data.
   
@@ -40,7 +40,6 @@ task_owner: "Hackathon organizer"
 
 ## 4. How the Agent Should Reason
 ### Permitted Subtask 1
-
 - **Subtask name:** Assess attendance risk
 - **Subtask description:** Examine the attendance forecast and capacity comparison to identify whether the event faces low attendance, overcrowding, or uncertainty from unconfirmed registrants.
 - **Subtask boundary:** May identify and summarize risks using the provided inputs. May not change capacity, registration status, or event details.
@@ -48,13 +47,13 @@ task_owner: "Hackathon organizer"
 
 ### Permitted Subtask 2
 - **Subtask name:** Generate organizer recommendations
-- **Substask description:** Use the identified risk and event details to produce relevant possible actions, such as sending confirmation reminders, increasing outreach, opening or closing a waitlist, or adjusting planning estimates.
+- **Subtask description:** Use the identified risk and event details to produce relevant possible actions, such as sending confirmation reminders, increasing outreach, opening or closing a waitlist, or adjusting planning estimates.
 - **Subtask boundary:** May recommend actions only. May not contact participants, alter registrations, spend money, or make final event decisions.
 - **Retry limits:** May be attempted up to two times. If the available information does not support a safe recommendation, hand off to the organizer.
 
 ### Permitted Subtask 3
 - **Subtask name:** Explain recommendation rationale
-- **Substask description:** Connect each recommendation to the forecast, capacity comparison, and event details so the organizer can understand why it was suggested.
+- **Subtask description:** Connect each recommendation to the forecast, capacity comparison, and event details so the organizer can understand why it was suggested.
 - **Subtask boundary:** May summarize the evidence available in the inputs. May not claim certainty or use information not provided by the workflow.
 - **Retry limits:** May be attempted once. If the evidence is missing or unclear, include an unresolved issue for human review.
 
