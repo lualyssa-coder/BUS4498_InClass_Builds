@@ -1,18 +1,5 @@
 # Recommend Organizer Actions Task Specification
 
-Create one copy of this template for each Level 3 task identified in class (For this in-class build practice, having one Level 3 task is sufficient).
-
-Save each copy in `my_first_agent/agent/task-specs/`. Rename the file using the task name in lowercase, with hyphens between words. Replace `&` with `and` and remove other punctuation.
-
-Examples:
-
-- `Grade Item Condition` becomes `grade-item-condition.md`
-- `Customer Dispute & Compensation Assessment` becomes `customer-dispute-and-compensation-assessment.md`
-
-Keep the **exact** task ID and task name from `workflow-of-tasks.md` inside the file. Replace all bracketed prompts. Leave Section 3 empty; tool permissions and boundaries will be added next week. 
-
-*Remove this sentence and the instructions above before your submission.*
-
 ```yaml
 # BASIC INFORMATION
 task_id: "T8"
@@ -43,14 +30,19 @@ task_owner: "Hackathon organizer"
 - **What it contains:** Event date, format, location, registration status, and planning constraints.
 - **Source:** T1 Collect event details.
 
+### Input 4
+
+- **Input name:** 1 status
+- **What it contains:** Total registered participants, number and proportion confirmed, and number and proportion unconfirmed.
+- **Source:** T2 Collect registration data.
+  
 ## 3. Tool Permissions and Boundaries
 
 ## 4. How the Agent Should Reason
-
 ### Permitted Subtask 1
 
 - **Subtask name:** Assess attendance risk
-- **Substask description:** Examine the attendance forecast and capacity comparison to identify whether the event faces low attendance, overcrowding, or uncertainty from unconfirmed registrants.
+- **Subtask description:** Examine the attendance forecast and capacity comparison to identify whether the event faces low attendance, overcrowding, or uncertainty from unconfirmed registrants.
 - **Subtask boundary:** May identify and summarize risks using the provided inputs. May not change capacity, registration status, or event details.
 - **Retry limits:** May be attempted up to two times if inputs are inconsistent. After two attempts, hand off the case for human review.
 
@@ -70,11 +62,9 @@ task_owner: "Hackathon organizer"
 
 ## 5. When to Stop or Hand Off to a Human
 
-- **Stop successfully when:** Stop successfully when the agent has produced one or more recommendations, explained the attendance risk supporting each recommendation, and clearly identified any uncertainty.
-- **Hand off early when:** Hand off early when forecast data is missing, registration data conflicts, the forecast confidence is too low, or a recommendation would require a decision about budget, capacity, participant communication, or event policy.
-- **Hand off to:** Unresolved cases are handed to the hackathon organizer for review and final approval.
-
-Stop at the first applicable budget limit or handoff condition. While awaiting review, take no further autonomous action.
+- **Stop successfully when:** The agent has produced one or more supported recommendations, explained the attendance risk behind each recommendation, and identified any remaining uncertainty.
+- **Hand off early when:** Attendance forecast data is missing, registration data conflicts, or forecast confidence is below 70 percent. Also hand off when a recommendation would require a decision about budget, event capacity, participant communication, or event policy.
+- **Handoff recipient:** Hackathon organizer, who reviews the information and makes the final decision.
 
 ## 6. Outbound Deliverable
 
@@ -84,4 +74,4 @@ Stop at the first applicable budget limit or handoff condition. While awaiting r
 - **Subtasks performed:** The permitted subtasks completed, including any repeated attempts: Assess attendance risk, Generate organizer recommendations, and Explain recommendation rationale.
 - **Unresolved issues:** Remaining uncertainty, missing data, conflicting registration records, or decisions requiring organizer approval. Write none only when the task is completed successfully.
 - **Handoff note:** For escalated cases, explain why the task stopped, identify the unresolved issue, and state the decision the hackathon organizer must make. Write Not applicable for a completed task.
-- **Next task or recipient:** Send the completed recommendation to the hackathon organizer for review and approval. Send unresolved cases to the hackathon organizer.
+- **Next task or recipient:** T9 Review recommendations — the hackathon organizer reviews and approves the recommendation. Unresolved cases also go to the hackathon organizer.
