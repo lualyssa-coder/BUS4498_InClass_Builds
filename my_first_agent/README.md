@@ -17,4 +17,4 @@ For CPVC organizers, improve hackathon attendance planning by using a historical
 
 ### Who Is Better Off When This Works?
 
-For CPVC organizers, improve hackathon attendance planning from a baseline of relying primarily on registration totals and a historical attendance-to-registration rate of roughly 40% to a target of predicting actual attendance within 10%, without collecting unnecessary personal information or sending excessive communications.
+CPVC organizers are better off because they can make more informed decisions about food, drinks, event swag, capacity, and other event resources while reducing unnecessary spending and shortages.
