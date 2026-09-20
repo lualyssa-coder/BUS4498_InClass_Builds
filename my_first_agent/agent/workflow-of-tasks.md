@@ -1,7 +1,5 @@
 # Workflow of Tasks
 
-*Replace all bracketed prompts with information specific to your proposed system. Delete instructional text that does not belong in your final specification. Add or remove task sections as needed. Every task shown in the general workflow must have a corresponding task specification below.*
-
 ## 1. Workflow Overview
 ### 1.1 Workflow Goal
 This workflow supports the system goal defined in `my_first_agent/README.md`.
@@ -20,7 +18,7 @@ HackTrack begins by collecting hackathon details and participant registration in
 
 Once the data is validated, HackTrack analyzes registration patterns to estimate how many registered participants are likely to attend. The forecast may consider factors such as registration timing, confirmation status, previous event attendance, event format, and cancellation history when available. HackTrack then compares the predicted attendance with the event’s capacity and planning requirements. If the prediction shows risks, such as low attendance, likely overcrowding, or a high number of unconfirmed registrants, it recommends actions such as sending reminders, opening a waitlist, adjusting food orders, or increasing outreach.
 
-Finally, the organizer reviews the forecast and recommendations. After review, HackTrack publishes the attendance prediction and keeps monitoring registration updates until the event.
+Finally, the organizer reviews the forecast and recommendations. After review, HackTrack publishes the attendance forecast. If new registration information is received, the workflow repeats the registration analysis and updates the forecast; otherwise, the attendance forecast is complete.
 
 ### 1.5 Workflow Diagram
 
