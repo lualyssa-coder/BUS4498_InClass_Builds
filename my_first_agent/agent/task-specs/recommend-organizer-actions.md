@@ -56,7 +56,7 @@ Tools may use only the supplied attendance forecast, capacity comparison, event 
 - **Tool name:** `retrieve_attendance_data`
 - **Role in this task:** Support Assess attendance risk, Generate organizer recommendations, and Explain recommendation rationale by locating the relevant information in the supplied workflow inputs.
 - **Input:** Attendance forecast; Capacity comparison; Event details; Registration confirmation status.
-- **Output:** Evidence summary; Unresolved issues.
+- **Output:** Relevant attendance, capacity, event, and registration information for the Evidence summary, plus missing or conflicting information for Unresolved issues.
 - **Implementation Route:** File operations restricted to the supplied workflow inputs.
 - **Integration approach:** Direct integration.
 - **Task timeout:** Subject to the same 120-second total task deadline. Each call may take at most 5 seconds or the remaining task time, whichever is shorter.
@@ -68,7 +68,7 @@ Tools may use only the supplied attendance forecast, capacity comparison, event 
 - **Tool name:** `check_attendance_thresholds`
 - **Role in this task:** Support Assess attendance risk and Generate organizer recommendations by comparing the attendance forecast, event capacity, and registration confirmation status to identify supported risks such as low attendance, overcrowding, or uncertainty from unconfirmed registrants.
 - **Input:** Attendance forecast; Capacity comparison; Registration confirmation status.
-- **Output:** Result or recommendation; Evidence summary; Unresolved issues.
+- **Output:** Attendance risk findings for the Result or recommendation and Evidence summary, plus uncertain comparisons for Unresolved issues.
 - **Implementation Route:** Functions/scripts performing deterministic comparisons of supplied attendance, capacity, and registration values.
 - **Integration approach:** Direct integration.
 - **Task timeout:** Subject to the same 120-second total task deadline. Each call may take at most 5 seconds or the remaining task time, whichever is shorter.
