@@ -36,10 +36,10 @@ flowchart TD
     T7 --> D2{"D2: Is there an attendance risk?"}
 
     D2 -->|Yes| T8["T8: Recommend organizer actions"]
-    T8 --> T9["T9: Review recommendations"]
+    T8 --> T9["T9: Review forecast and recommendations"]
     T9 --> T10["T10: Publish attendance forecast"]
 
-    D2 -->|No| T10
+    D2 -->|No| T9
 
     T10 --> D3{"D3: Are new registrations received?"}
     D3 -->|Yes| T2
