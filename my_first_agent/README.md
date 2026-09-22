@@ -13,7 +13,7 @@ Alyssa Lu
 HackTrack
 
 ### System Goal
-For CPVC organizers, improve hackathon attendance planning by using a historical attendance-to-registration rate of roughly 40% as the baseline for forecasting attendance, with a target of predicting actual attendance within 10%, without collecting unnecessary personal information or sending excessive communications.
+For CPVC organizers, improve hackathon attendance planning by reducing the difference between predicted and actual attendance. Currently, forecast accuracy is not formally measured, and organizers rely on registration totals and a historical attendance-to-registration rate of roughly 40%. The target is for predicted attendance to be within 10% of actual attendance, without collecting unnecessary personal information or sending excessive communications.
 
 ### Who Is Better Off When This Works?
 
