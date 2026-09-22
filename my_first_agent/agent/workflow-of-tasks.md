@@ -10,7 +10,7 @@ The workflow starts when a hackathon organizer creates an event and opens regist
 
 ### 1.3 Completion Condition at Runtime
 
-The workflow is complete when HackTrack has produced an attendance forecast and either published the forecast directly, if no attendance risk was identified, or provided recommended actions for organizer review and published the forecast after that review, if an attendance risk was identified.
+The workflow is complete when HackTrack has produced an attendance forecast, the organizer has reviewed the forecast and any recommendations generated, the forecast has been published, and no new registration information is pending.
 
 ### 1.4 General Workflow
 
@@ -18,7 +18,7 @@ HackTrack begins by collecting hackathon details and participant registration in
 
 Once the data is validated, HackTrack analyzes registration patterns to estimate how many registered participants are likely to attend. The forecast may consider factors such as registration timing, confirmation status, previous event attendance, event format, and cancellation history when available. HackTrack then compares the predicted attendance with the event's capacity and planning requirements. If the prediction shows risks, such as low attendance, likely overcrowding, or a high number of unconfirmed registrants, it recommends actions such as sending reminders, opening a waitlist, adjusting food orders, or increasing outreach, and the organizer reviews the forecast and these recommendations before HackTrack publishes the forecast.
 
-If no attendance risk is identified, HackTrack publishes the attendance forecast directly without requiring organizer review. If new registration information is received, the workflow repeats the registration analysis and updates the forecast; otherwise, the attendance forecast is complete.
+If no attendance risk is identified, the organizer reviews the attendance forecast before HackTrack publishes it. If new registration information is received, the workflow repeats the registration analysis and updates the forecast; otherwise, the attendance forecast is complete.
 
 ### 1.5 Workflow Diagram
 
@@ -39,7 +39,7 @@ flowchart TD
     T8 --> T9["T9: Review forecast and recommendations"]
     T9 --> T10["T10: Publish attendance forecast"]
 
-    D2 -->|No| T10
+    D2 -->|No| T9
 
     T10 --> D3{"D3: Are new registrations received?"}
     D3 -->|Yes| T2
