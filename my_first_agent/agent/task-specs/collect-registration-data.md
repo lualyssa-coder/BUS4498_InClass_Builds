@@ -24,9 +24,15 @@ Collect the participant registration information needed for HackTrack to validat
 - **Input name:** Participant registration submissions
 - **Contents and format:** Structured registration records containing registration date, participant background information collected by the event, and registration confirmation status.
 - **Source:** Participants through the hackathon registration process.
+- **If a required input is missing or invalid:** Store the submission with the missing or invalid fields as provided. Do not discard the record or route it to T4 directly; let T3 Validate registration records identify and classify the issue.
 
-- **If a required input is missing or invalid:** Mark the affected registration information as incomplete and route the record to T4 Flag records for human review. Do not continue processing the affected record as if the required information were valid.
+### Input 3
 
+- **Input name:** Corrected registration information
+- **Contents and format:** Registration record corrected by the hackathon organizer after human review of a flagged validation issue.
+- **Source:** T4 Flag records for human review (returned after organizer correction).
+- **If a required input is missing or invalid:** Store only the fields provided and let T3 re-evaluate the record on its next pass through validation.
+  
 ## 3. Outputs
 
 ### Output 1
