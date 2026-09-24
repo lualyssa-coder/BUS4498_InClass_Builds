@@ -34,7 +34,7 @@ On inference failure or exhausted limits: Record the unresolved status and hand 
 
 ### Input 3
 - **Input name:** Event details
-- **What it contains:** Event date, format, location, registration status, and planning constraints.
+- **What it contains:** Event date, format, location, capacity, and registration status.
 - **Source:** T1 Collect event details.
 
 ### Input 4
