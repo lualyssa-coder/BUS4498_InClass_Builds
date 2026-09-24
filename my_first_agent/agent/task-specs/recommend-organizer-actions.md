@@ -115,4 +115,4 @@ Stop at the first applicable task-wide limit or handoff condition. After handoff
 - **Subtasks performed:** The permitted subtasks completed, including any repeated attempts: Assess attendance risk, Generate organizer recommendations, and Explain recommendation rationale.
 - **Unresolved issues:** Remaining uncertainty, missing data, conflicting registration records, or decisions requiring organizer approval. Write `none` only when the task is completed successfully.
 - **Handoff note:** For escalated cases, explain why the task stopped, identify the unresolved issue, and state the decision the hackathon organizer must make. Write `Not applicable` for a completed task.
-- **Next task or recipient:** T9 Review recommendations — the hackathon organizer reviews and approves the recommendation. Unresolved cases also go to the hackathon organizer.
+- **Next task or recipient:** T9 Review forecast and recommendations — the hackathon organizer reviews the attendance forecast and any recommendations before publication. Unresolved cases also go to the hackathon organizer.
