@@ -33,7 +33,7 @@ Compare the attendance forecast produced in T6 with the hackathon's event capaci
 
 - **Output name:** Capacity comparison
 - **Contents and format:** Structured comparison containing the event capacity, forecasted attendance, difference between forecasted attendance and capacity, and whether predefined planning thresholds indicate an attendance risk.
-- **Next task or recipient:** T8 Recommend organizer actions when an attendance risk is identified. When no attendance risk is identified, the workflow proceeds directly to T9 Review forecast and recommendations without additional input from this task.
+- **Next task or recipient:** T8 Recommend organizer actions when an attendance risk is identified. When no attendance risk is identified, the workflow proceeds directly to T9 Review forecast and recommendations.
 - **Complete when:** The attendance forecast has been compared with event capacity and the applicable planning thresholds, and the attendance-risk result has been recorded.
 
 ## 4. Planned Tools
