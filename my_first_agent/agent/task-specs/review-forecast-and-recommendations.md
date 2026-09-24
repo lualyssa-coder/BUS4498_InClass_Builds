@@ -18,22 +18,22 @@ Review HackTrack's attendance forecast and, when an attendance risk is identifie
 - **Input name:** Attendance forecast
 - **Contents and format:** Structured forecast containing the predicted number of attendees, forecast confidence, and identified attendance risks.
 - **Source:** T6 Predict participant attendance.
+- **If a required input is missing or invalid:** Do not proceed with review. Record the review as pending and return the issue to T6 Predict participant attendance for correction.
 
 ### Input 2
 
 - **Input name:** Organizer recommendations
 - **Contents and format:** Structured recommendations containing suggested organizer actions, supporting rationale, and relevant forecast or capacity context. This input is only present when an attendance risk results in T8 being performed.
 - **Source:** T8 Recommend organizer actions.
-
-- **If a required input is missing or invalid:** Do not approve the forecast for publication. The hackathon organizer records the review as pending and returns the issue to the task responsible for the missing or invalid information. Organizer recommendations are optional when no attendance risk was identified and T8 was not performed.
-
+- **If a required input is missing or invalid:** Do not proceed with review. Record the review as pending and return the issue to T8 Recommend organizer actions for correction. Organizer recommendations are optional when no attendance risk was identified and T8 was not performed, so their absence in that case is not a missing-input error.
+  
 ## 3. Outputs
 
 ### Output 1
 
 - **Output name:** Organizer review decision
 - **Contents and format:** Human-recorded decision indicating whether the attendance forecast is approved for publication, along with any requested changes or comments on the forecast and recommendations.
-- **Next task or recipient:** T10 Publish attendance forecast when the organizer explicitly approves the forecast. If changes are requested, the affected information is returned to the appropriate prior task for correction.
+- **Next task or recipient:** T10 Publish attendance forecast when the organizer explicitly approves the forecast. If changes are requested, the review remains pending and the affected information is returned to T6 Predict participant attendance or T8 Recommend organizer actions, whichever produced the issue, for correction.
 - **Complete when:** The hackathon organizer has explicitly recorded an approval or requested changes after reviewing the attendance forecast and any available recommendations.
 
 ## 4. Planned Tools
