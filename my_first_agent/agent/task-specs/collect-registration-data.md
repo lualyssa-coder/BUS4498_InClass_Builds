@@ -54,7 +54,7 @@ Collect the participant registration information needed for HackTrack to validat
 ### Tool 1
 
 - **Tool name:** `collect_registration_data`
-- **Input:** Event details; Participant registration submissions
+- **Input:** Event details; Participant registration submissions; Corrected registration information
 - **Output:** Registration data; Registration confirmation status
 - **Implementation Route:** Database queries and functions/scripts for retrieving and organizing registration records.
 - **Integration approach:** Direct integration.
