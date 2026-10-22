@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A public event board for campus clubs.">
+  <title>Club Event Radar</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <p class="kicker">Campus clubs · Cal Poly</p>
+      <h1>Club Event Radar</h1>
+      <p class="lede">Find what is happening on campus, or turn a club announcement into a clear event card.</p>
+      <ul class="badges" aria-label="Website features">
+        <li>Campus events</li>
+        <li>Clear details</li>
+        <li>Moderator checked</li>
+      </ul>
+    </div>
+  </header>
+
+  <main class="wrap layout">
+    <section class="card post" aria-labelledby="post-heading">
+      <h2 id="post-heading">Post an event</h2>
+      <p class="muted">Paste the announcement from your club. The event agent will check it before posting.</p>
+
+      <form id="post-form">
+        <label for="announcement">
+          Announcement
+          <span class="hint">Use 1–2,000 characters. Include the date, start time, and place.</span>
+        </label>
+        <textarea id="announcement" name="announcement" maxlength="2000" required></textarea>
+        <button id="submit-post" type="submit">Check and post</button>
+      </form>
+
+      <div id="post-result" class="result" role="status" aria-live="polite" hidden></div>
+    </section>
+
+    <section class="board-section" aria-labelledby="board-heading">
+      <div class="board-head">
+        <div>
+          <p class="kicker">What’s happening</p>
+          <h2 id="board-heading">Upcoming events</h2>
+        </div>
+        <button id="refresh-events" class="ghost" type="button">Refresh</button>
+      </div>
+
+      <div class="filters" role="group" aria-label="Event filters">
+        <button class="chip" type="button" data-filter="all" aria-pressed="true">All events</button>
+        <button class="chip" type="button" data-filter="food" aria-pressed="false">Free food</button>
+        <button class="chip" type="button" data-filter="online" aria-pressed="false">Online</button>
+      </div>
+
+      <p id="board-status" class="muted" role="status" aria-live="polite"></p>
+      <ul id="event-board" class="board" aria-live="polite"></ul>
+    </section>
+  </main>
+
+  <footer class="wrap foot">
+    <p>Club Event Radar · Built for BUS 4498</p>
+  </footer>
+</body>
+</html>

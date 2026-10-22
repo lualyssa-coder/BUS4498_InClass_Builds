@@ -1,0 +1,8 @@
+# Never upload these to GitHub.
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+supabase/.temp/
+supabase/.branches/
