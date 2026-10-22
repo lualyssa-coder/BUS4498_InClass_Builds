@@ -1,106 +1,72 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A public event board for campus clubs.">
-  <title>Club Event Radar</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
-  <script src="config.js"></script>
-  <script src="app.js" defer></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Club Event Radar</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="top">
-    <div class="wrap">
-      <p class="kicker">Campus clubs · Cal Poly</p>
-      <h1>Club Event Radar</h1>
-      <p class="lede">Find what is happening on campus, or turn a club announcement into a clear event card.</p>
-      <ul class="badges" aria-label="Website features">
-        <li>Campus events</li>
-        <li>Clear details</li>
-        <li>Moderator checked</li>
-      </ul>
-    </div>
-  </header>
-
-  <main class="wrap layout">
-    <section class="card post" aria-labelledby="post-heading">
-      <h2 id="post-heading">Post an event</h2>
-      <p class="muted">Paste the announcement from your club. The event agent will check it before posting.</p>
-
-      <form id="post-form">
-        <label for="announcement">
-          Announcement
-          <span class="hint">Use 1–2,000 characters. Include the date, start time, and place.</span>
-        </label>
-        <textarea id="announcement" name="announcement" maxlength="2000" required></textarea>
-        <label for="flyer">
-          Flyer photo
-          <span class="hint">Optional JPG or PNG, up to 5 MB.</span>
-        </label>
-        <input id="flyer" name="flyer" type="file" accept="image/jpeg,image/png">
-        <button id="submit-post" type="submit">Check and post</button>
-      </form>
-
-      <div id="post-result" class="result" role="status" aria-live="polite" hidden></div>
-    </section>
-
-    <section class="board-section" aria-labelledby="board-heading">
-      <div class="board-head">
-        <div>
-          <p class="kicker">What’s happening</p>
-          <h2 id="board-heading">Upcoming events</h2>
-        </div>
-        <button id="refresh-events" class="ghost" type="button">Refresh</button>
-      </div>
-
-      <div class="filters" role="group" aria-label="Event filters">
-        <button class="chip" type="button" data-filter="all" aria-pressed="true">All events</button>
-        <button class="chip" type="button" data-filter="food" aria-pressed="false">Free food</button>
-        <button class="chip" type="button" data-filter="online" aria-pressed="false">Online</button>
-      </div>
-
-      <p id="board-status" class="muted" role="status" aria-live="polite"></p>
-      <ul id="event-board" class="board" aria-live="polite"></ul>
-    </section>
-  </main>
-
+<header class="top">
   <div class="wrap">
-    <details class="card mod">
+    <p class="kicker">Campus clubs · practice website</p>
+    <h1>Club Event Radar</h1>
+    <p class="lede">Paste a club announcement. An AI agent turns it into an event card, checks the posting rules, and catches duplicates.</p>
+    <ul class="badges">
+      <li>🤖 Cards drafted by an AI agent</li>
+      <li>✅ Checked against posting rules</li>
+      <li>🧑‍⚖️ Unclear posts go to a moderator</li>
+    </ul>
+  </div>
+</header>
+
+<main class="wrap layout">
+  <section class="card post" aria-labelledby="postTitle">
+    <h2 id="postTitle">Post an event</h2>
+    <form id="postForm">
+      <label for="announcement">Announcement <span class="hint">Paste the Instagram caption, group-chat message, or flyer text.</span></label>
+      <textarea id="announcement" name="announcement" rows="6" maxlength="2000" required placeholder="Board Game Guild: Game Night! Thursday, 7 to 10 pm in the University Union, Room 220. Free pizza!"></textarea>
+      <label for="flyer">Flyer photo <span class="hint">Optional. JPG or PNG, up to 5 MB. Posts with a photo wait for a moderator.</span></label>
+      <input id="flyer" name="flyer" type="file" accept="image/jpeg,image/png">
+      <button type="submit" id="postBtn">Post it</button>
+    </form>
+    <div id="postResult" class="result" role="status" aria-live="polite" hidden></div>
+  </section>
+
+  <section class="board-section" aria-labelledby="boardTitle">
+    <div class="board-head">
+      <h2 id="boardTitle">Coming up</h2>
+      <button type="button" class="ghost" id="refreshBtn">Refresh</button>
+    </div>
+    <p id="boardStatus" class="muted" role="status"></p>
+    <ul id="board" class="board"></ul>
+
+    <details class="card mod" id="modBox">
       <summary>Moderator sign-in</summary>
-
-      <div id="moderator-signed-out">
-        <p class="muted">Sign in to review event posts that are waiting for approval.</p>
-        <form id="moderator-signin-form">
-          <label for="moderator-email">Email</label>
-          <input id="moderator-email" type="email" autocomplete="username" required>
-
-          <label for="moderator-password">Password</label>
-          <input id="moderator-password" type="password" autocomplete="current-password" required>
-
-          <button id="moderator-signin" type="submit">Sign in</button>
-        </form>
-      </div>
-
-      <div id="moderator-status" class="result" role="status" aria-live="polite" hidden></div>
-
-      <div id="moderator-signed-in" hidden>
-        <div class="board-head">
-          <div>
-            <h3>Waiting for review</h3>
-            <p id="moderator-user" class="muted"></p>
-          </div>
-          <button id="moderator-signout" class="ghost" type="button">Sign out</button>
-        </div>
-
-        <ul id="waiting-board" class="board preview" aria-live="polite"></ul>
+      <form id="signInForm">
+        <label for="modEmail">Email</label>
+        <input id="modEmail" type="email" autocomplete="username" required>
+        <label for="modPassword">Password</label>
+        <input id="modPassword" type="password" autocomplete="current-password" required>
+        <button type="submit" id="signInBtn">Sign in</button>
+        <p id="signInMsg" class="muted" role="status"></p>
+      </form>
+      <div id="modArea" hidden>
+        <p>Signed in as <b id="modWho"></b>. <button type="button" class="ghost" id="signOutBtn">Sign out</button></p>
+        <h3>Waiting for review</h3>
+        <p id="waitingStatus" class="muted" role="status"></p>
+        <ul id="waitingList" class="board"></ul>
       </div>
     </details>
-  </div>
+  </section>
+</main>
 
-  <footer class="wrap foot">
-    <p>Club Event Radar · Built for BUS 4498</p>
-  </footer>
+<footer class="wrap foot">
+  <p>A practice website for BUS 4498. The clubs and events are made up. <span id="aiNote"></span></p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
+<script src="config.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

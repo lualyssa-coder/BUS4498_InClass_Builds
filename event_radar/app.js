@@ -1,536 +1,210 @@
-(() => {
+// Club Event Radar: the website. It runs in each visitor's browser (GitHub Pages only serves it).
+// It reads published events from the database and sends new posts to the AI agent.
+// It knows only the project address and the publishable key, so it can do only what the security rules allow.
+(function () {
   "use strict";
+  var cfg = window.EVENT_RADAR_CONFIG || {};
+  var $ = function (id) { return document.getElementById(id); };
 
-  const config = window.EVENT_RADAR_CONFIG || {};
-  const state = {
-    events: [],
-    filter: "all",
-  };
-  const MAX_FLYER_SIZE = 5 * 1024 * 1024;
-  const FLYER_TYPES = new Set(["image/jpeg", "image/png"]);
+  if (!cfg.supabaseUrl || /YOUR-PROJECT-REF/.test(cfg.supabaseUrl) || !cfg.publishableKey || /YOUR-KEY/.test(cfg.publishableKey)) {
+    $("boardStatus").textContent = "Add your Project URL and publishable key to config.js first.";
+    return;
+  }
+  if (/^sb_secret_/.test(cfg.publishableKey)) {
+    $("boardStatus").textContent = "Stop: config.js holds the secret key. Replace it with the publishable key, then create a new secret key in Supabase.";
+    return;
+  }
 
-  const columns = [
-    "id",
-    "created_at",
-    "status",
-    "title",
-    "club",
-    "event_date",
-    "start_time",
-    "end_time",
-    "place_name",
-    "place_detail",
-    "cost",
-    "free_food",
-    "summary",
+  var baseUrl = cfg.supabaseUrl.replace(/\/+$/, "");
+  var db = window.supabase.createClient(baseUrl, cfg.publishableKey);
+  var AGENT_URL = baseUrl + "/functions/v1/submit-event";
+  // The website may read only these columns (the menu), never the raw announcement or moderator notes.
+  var PUBLIC_COLUMNS = [
+    "id", "title", "club", "event_date", "start_time", "end_time", "place_name", "place_detail", "cost", "free_food", "summary",
     "flyer_url",
-  ].join(", ");
-  const moderatorColumns = [
-    columns,
-    "announcement",
-    "status_reason",
-    "note_for_moderator",
-  ].join(", ");
+  ].join(",");
 
-  let supabaseClient = null;
-  let moderatorSession = null;
-
-  const elements = {};
-
-  function makeElement(tagName, className, text) {
-    const element = document.createElement(tagName);
-    if (className) element.className = className;
-    if (text !== undefined) element.textContent = text;
-    return element;
+  /* ---------- small helpers ---------- */
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text; // always textContent: posts are typed by strangers
+    return e;
+  }
+  function fmtDate(d) {
+    if (!d) return "Date to be announced";
+    var p = d.split("-");
+    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+  }
+  function fmtTime(t) {
+    if (!t) return "";
+    var p = t.split(":"), h = +p[0], ap = h >= 12 ? "PM" : "AM";
+    return (h % 12 || 12) + ":" + p[1] + " " + ap;
   }
 
-  function setBoardStatus(message) {
-    elements.boardStatus.textContent = message;
+  /* ---------- one event card: date badge, details, and (from Stage 7) the flyer ---------- */
+  function dateBadge(d) {
+    var box = el("div", "date");
+    if (!d) { box.className = "date tba"; box.appendChild(el("span", "day", "TBA")); return box; }
+    var p = d.split("-"), day = new Date(+p[0], +p[1] - 1, +p[2]);
+    box.appendChild(el("span", "mon", day.toLocaleDateString("en-US", { month: "short" })));
+    box.appendChild(el("span", "day", String(day.getDate())));
+    return box;
   }
-
-  function setResult(kind, label, message, reasons = []) {
-    const result = elements.postResult;
-    result.hidden = false;
-    result.className = `result ${kind}`;
-    result.replaceChildren();
-
-    result.append(makeElement("p", "result-label", label));
-    result.append(makeElement("p", "result-message", message));
-
-    if (reasons.length > 0) {
-      const list = makeElement("ul", "reasons");
-      for (const reason of reasons) {
-        list.append(makeElement("li", "", reason));
-      }
-      result.append(list);
+  function card(ev, extra) {
+    var li = el("li", "event");
+    li.appendChild(dateBadge(ev.event_date));
+    var body = el("div", "event-body");
+    var time = ev.start_time ? " · " + fmtTime(ev.start_time) + (ev.end_time ? " to " + fmtTime(ev.end_time) : "") : "";
+    body.appendChild(el("p", "when", fmtDate(ev.event_date) + time));
+    body.appendChild(el("h3", null, ev.title || "Untitled event"));
+    var where = [ev.place_name, ev.place_detail].filter(Boolean).join(", ");
+    var meta = [ev.club, where].filter(Boolean).join(" · ");
+    if (meta) body.appendChild(el("p", "meta", meta));
+    if (ev.summary) body.appendChild(el("p", "summary", ev.summary));
+    var tags = el("p", "tags");
+    if (ev.cost) tags.appendChild(el("span", "tag", ev.cost));
+    if (ev.free_food) tags.appendChild(el("span", "tag food", "🍕 Free food"));
+    if (tags.childNodes.length) body.appendChild(tags);
+    if (extra) body.appendChild(extra);
+    li.appendChild(body);
+    if (ev.flyer_url && ev.flyer_url.indexOf(baseUrl + "/storage/v1/object/public/flyers/") === 0) {
+      var img = el("img", "flyer");
+      img.src = ev.flyer_url;
+      img.alt = "Flyer for " + (ev.title || "this event");
+      img.loading = "lazy";
+      li.appendChild(img);
     }
+    return li;
   }
 
-  function setModeratorStatus(kind, label, message) {
-    const result = elements.moderatorStatus;
-    result.hidden = false;
-    result.className = `result ${kind}`;
-    result.replaceChildren();
-    result.append(makeElement("p", "result-label", label));
-    result.append(makeElement("p", "result-message", message));
-  }
-
-  function formatDate(dateValue) {
-    if (!dateValue) return null;
-    const match = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (!match) return null;
-    const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
-    if (Number.isNaN(date.getTime())) return null;
-    return {
-      month: new Intl.DateTimeFormat("en-US", { month: "short" }).format(date),
-      day: new Intl.DateTimeFormat("en-US", { day: "numeric" }).format(date),
-      full: new Intl.DateTimeFormat("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-      }).format(date),
-    };
-  }
-
-  function formatTime(timeValue) {
-    if (!timeValue) return "";
-    const match = String(timeValue).match(/^(\d{1,2}):(\d{2})/);
-    if (!match) return "";
-    const date = new Date(2000, 0, 1, Number(match[1]), Number(match[2]));
-    if (Number.isNaN(date.getTime())) return "";
-    return new Intl.DateTimeFormat("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    }).format(date);
-  }
-
-  function formatWhen(event) {
-    const date = formatDate(event.event_date);
-    const start = formatTime(event.start_time);
-    const end = formatTime(event.end_time);
-    const time = start && end ? `${start} to ${end}` : start || end;
-
-    if (date && time) return `${date.full} · ${time}`;
-    if (date) return `${date.full} · Time to be announced`;
-    if (time) return `Date to be announced · ${time}`;
-    return "Date and time to be announced";
-  }
-
-  function eventMatchesFilter(event) {
-    if (state.filter === "food") return event.free_food === true;
-    if (state.filter === "online") {
-      return String(event.place_name || "").toLowerCase() === "online";
-    }
-    return true;
-  }
-
-  function createEventCard(event) {
-    const item = makeElement("li", "event");
-    const date = formatDate(event.event_date);
-
-    if (date) {
-      const dateBox = makeElement("div", "date");
-      dateBox.append(makeElement("span", "mon", date.month));
-      dateBox.append(makeElement("span", "day", date.day));
-      item.append(dateBox);
-    } else {
-      const dateBox = makeElement("div", "date tba");
-      dateBox.append(makeElement("span", "day", "TBA"));
-      item.append(dateBox);
-    }
-
-    const body = makeElement("div", "event-body");
-    body.append(makeElement("p", "when", formatWhen(event)));
-    body.append(makeElement("h3", "", event.title || "Campus event"));
-
-    const location = [event.place_name, event.place_detail].filter(Boolean).join(" · ");
-    const meta = [event.club, location].filter(Boolean).join(" · ");
-    if (meta) body.append(makeElement("p", "meta", meta));
-    if (event.summary) body.append(makeElement("p", "summary", event.summary));
-
-    const tags = makeElement("p", "tags");
-    if (event.cost) tags.append(makeElement("span", "tag", event.cost));
-    if (event.free_food === true) {
-      tags.append(makeElement("span", "tag food", "🍕 Free food"));
-    }
-    if (tags.childElementCount > 0) body.append(tags);
-
-    item.append(body);
-
-    if (isProjectFlyerUrl(event.flyer_url)) {
-      const flyer = makeElement("img", "flyer");
-      flyer.src = event.flyer_url;
-      flyer.alt = `${event.title || "Event"} flyer`;
-      flyer.loading = "lazy";
-      flyer.decoding = "async";
-      item.append(flyer);
-    }
-
-    return item;
-  }
-
-  function createReviewCard(event) {
-    const item = createEventCard(event);
-    const review = makeElement("div", "review");
-    review.append(makeElement("p", "why", event.status_reason || "Waiting for review."));
-    review.append(makeElement("p", "original", event.announcement || "No original announcement was saved."));
-
-    const actions = makeElement("p", "actions");
-    const approveButton = makeElement("button", "", "Approve");
-    const rejectButton = makeElement("button", "ghost", "Reject");
-
-    approveButton.addEventListener("click", () => reviewEvent(event, "published", approveButton, rejectButton));
-    rejectButton.addEventListener("click", () => reviewEvent(event, "rejected", approveButton, rejectButton));
-
-    actions.append(approveButton, rejectButton);
-    review.append(actions);
-    item.querySelector(".event-body").append(review);
-    return item;
-  }
-
-  function isProjectFlyerUrl(value) {
-    if (!value || !config.supabaseUrl) return false;
-    try {
-      const imageUrl = new URL(value);
-      const projectUrl = new URL(config.supabaseUrl);
-      return imageUrl.protocol === "https:" &&
-        imageUrl.origin === projectUrl.origin &&
-        imageUrl.pathname.startsWith("/storage/v1/object/public/flyers/");
-    } catch {
-      return false;
-    }
-  }
-
-  function renderEvents(emptyMessage = "No published events yet. Post the first one!") {
-    const board = elements.eventBoard;
-    board.replaceChildren();
-    const visibleEvents = state.events.filter(eventMatchesFilter);
-
-    if (visibleEvents.length === 0) {
-      board.append(makeElement("li", "empty", emptyMessage));
-      return;
-    }
-
-    for (const event of visibleEvents) board.append(createEventCard(event));
-  }
-
-  async function loadEvents() {
-    if (!supabaseClient) {
-      setBoardStatus("The website is not connected to Supabase yet.");
-      renderEvents("Events are unavailable until the website is configured.");
-      return;
-    }
-
-    elements.refreshEvents.disabled = true;
-    setBoardStatus("Loading events…");
-
-    const { data, error } = await supabaseClient
-      .from("events")
-      .select(columns)
-      .eq("status", "published")
+  /* ---------- the event list: published events only ---------- */
+  function loadBoard() {
+    $("boardStatus").textContent = "Loading…";
+    db.from("events").select(PUBLIC_COLUMNS).eq("status", "published")
       .order("event_date", { ascending: true, nullsFirst: false })
-      .order("start_time", { ascending: true, nullsFirst: false });
-
-    elements.refreshEvents.disabled = false;
-
-    if (error) {
-      console.error("Could not load events", error);
-      setBoardStatus("Could not load events right now.");
-      renderEvents("Events are temporarily unavailable.");
-      return;
-    }
-
-    state.events = data || [];
-    setBoardStatus(state.events.length === 1 ? "1 published event" : `${state.events.length} published events`);
-    renderEvents();
-  }
-
-  async function loadWaitingEvents() {
-    if (!supabaseClient || !moderatorSession) return;
-
-    const { data, error } = await supabaseClient
-      .from("events")
-      .select(moderatorColumns)
-      .eq("status", "waiting")
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error("Could not load waiting events", error);
-      setModeratorStatus("error", "Could not load reviews", "The waiting posts could not be loaded.");
-      elements.waitingBoard.replaceChildren();
-      return;
-    }
-
-    elements.waitingBoard.replaceChildren();
-    const waitingEvents = data || [];
-    if (waitingEvents.length === 0) {
-      elements.waitingBoard.append(makeElement("li", "empty", "No posts are waiting for review."));
-      return;
-    }
-
-    for (const event of waitingEvents) {
-      elements.waitingBoard.append(createReviewCard(event));
-    }
-  }
-
-  async function reviewEvent(event, status, approveButton, rejectButton) {
-    approveButton.disabled = true;
-    rejectButton.disabled = true;
-
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !userData.user) {
-      setModeratorStatus("error", "Sign-in expired", "Sign in again before reviewing posts.");
-      approveButton.disabled = false;
-      rejectButton.disabled = false;
-      return;
-    }
-
-    const statusReason = status === "published"
-      ? "Approved by moderator."
-      : "Rejected by moderator.";
-    const { error } = await supabaseClient
-      .from("events")
-      .update({
-        status,
-        status_reason: statusReason,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: userData.user.id,
-      })
-      .eq("id", event.id)
-      .eq("status", "waiting");
-
-    if (error) {
-      console.error("Could not review event", error);
-      setModeratorStatus("error", "Review failed", "The post could not be updated.");
-      approveButton.disabled = false;
-      rejectButton.disabled = false;
-      return;
-    }
-
-    setModeratorStatus(
-      status === "published" ? "published" : "rejected",
-      status === "published" ? "Approved" : "Rejected",
-      status === "published" ? "The event is now on the public website." : "The event will not appear on the public website.",
-    );
-    await loadWaitingEvents();
-    await loadEvents();
-  }
-
-  function showModeratorSignedOut() {
-    elements.moderatorSignedOut.hidden = false;
-    elements.moderatorSignedIn.hidden = true;
-    elements.moderatorUser.textContent = "";
-    elements.waitingBoard.replaceChildren();
-  }
-
-  async function showModeratorSignedIn(session) {
-    moderatorSession = session;
-    elements.moderatorSignedOut.hidden = true;
-    elements.moderatorSignedIn.hidden = false;
-    elements.moderatorUser.textContent = session.user.email || "Signed in moderator";
-    await loadWaitingEvents();
-  }
-
-  async function signInModerator(event) {
-    event.preventDefault();
-    const email = elements.moderatorEmail.value.trim();
-    const password = elements.moderatorPassword.value;
-
-    if (!email || !password) {
-      setModeratorStatus("error", "Add your sign-in", "Enter your moderator email and password.");
-      return;
-    }
-
-    elements.moderatorSignin.disabled = true;
-    setModeratorStatus("waiting", "Signing in…", "Checking your moderator account.");
-
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    elements.moderatorSignin.disabled = false;
-
-    if (error || !data?.session) {
-      console.error("Could not sign in moderator", error);
-      setModeratorStatus(
-        "error",
-        "Sign-in failed",
-        error?.message || "Supabase did not return a signed-in session.",
-      );
-      return;
-    }
-
-    elements.moderatorPassword.value = "";
-    await showModeratorSignedIn(data.session);
-  }
-
-  async function signOutModerator() {
-    const { error } = await supabaseClient.auth.signOut();
-    if (error) {
-      console.error("Could not sign out moderator", error);
-      setModeratorStatus("error", "Sign-out failed", "Try signing out again.");
-      return;
-    }
-
-    moderatorSession = null;
-    showModeratorSignedOut();
-  }
-
-  async function initModerator() {
-    const { data, error } = await supabaseClient.auth.getSession();
-    if (error) {
-      console.error("Could not check moderator session", error);
-      showModeratorSignedOut();
-      return;
-    }
-
-    if (data.session) {
-      await showModeratorSignedIn(data.session);
-    } else {
-      showModeratorSignedOut();
-    }
-
-    supabaseClient.auth.onAuthStateChange((_event, session) => {
-      moderatorSession = session;
-      if (!session) {
-        showModeratorSignedOut();
-        return;
-      }
-
-      window.setTimeout(() => showModeratorSignedIn(session), 0);
-    });
-  }
-
-  async function submitAnnouncement(event) {
-    event.preventDefault();
-    const announcement = elements.announcement.value.trim();
-
-    if (!announcement) {
-      setResult("error", "Add an announcement", "Paste the club announcement before submitting it.");
-      elements.announcement.focus();
-      return;
-    }
-
-    const flyer = elements.flyer.files[0] || null;
-    if (flyer && (!FLYER_TYPES.has(flyer.type) || flyer.size < 1 || flyer.size > MAX_FLYER_SIZE)) {
-      setResult("error", "Check the flyer", "Choose a JPG or PNG flyer no larger than 5 MB.");
-      return;
-    }
-
-    if (!config.supabaseUrl || !config.publishableKey) {
-      setResult("error", "Website not configured", "The Supabase Project URL or publishable key is missing.");
-      return;
-    }
-
-    const submitButton = elements.submitPost;
-    submitButton.disabled = true;
-    setResult("waiting", "Checking…", "The event agent is reviewing this announcement.");
-
-    const formData = new FormData();
-    formData.append("announcement", announcement);
-    if (flyer) formData.append("flyer", flyer, flyer.name);
-
-    try {
-      const response = await fetch(`${config.supabaseUrl}/functions/v1/submit-event`, {
-        method: "POST",
-        headers: {
-          apikey: config.publishableKey,
-        },
-        body: formData,
+      .order("start_time", { ascending: true, nullsFirst: false })
+      .then(function (res) {
+        var list = $("board");
+        list.textContent = "";
+        if (res.error) { $("boardStatus").textContent = "Couldn't load events: " + res.error.message; return; }
+        res.data.forEach(function (ev) { list.appendChild(card(ev)); });
+        if (!res.data.length) list.appendChild(el("li", "empty", "No events yet. Post the first one!"));
+        $("boardStatus").textContent = res.data.length ? res.data.length + (res.data.length === 1 ? " event" : " events") : "";
       });
+  }
 
-      let payload;
-      try {
-        payload = await response.json();
-      } catch {
-        payload = null;
-      }
-
-      if (!response.ok || !payload) {
-        setResult("error", "Couldn’t reach the agent", "The event agent returned an unexpected response.");
-        return;
-      }
-
-      const status = payload.status || (payload.ok ? "published" : "error");
-      const labels = {
-        published: "Published",
-        waiting: "Waiting for review",
-        rejected: "Not posted",
-        duplicate: "Already posted",
-        error: "Could not post",
-      };
-      const kind = ["published", "waiting", "rejected", "duplicate"].includes(status)
-        ? status
-        : "error";
-      const message = payload.message || "The agent finished without a message.";
-      const reasons = Array.isArray(payload.reasons) ? payload.reasons : [];
-      setResult(kind, labels[status] || labels.error, message, reasons);
-
-      if (payload.ok && status === "published") {
-        elements.postForm.reset();
-        await loadEvents();
-      }
-    } catch (error) {
-      console.error("Could not reach event agent", error);
-      setResult(
-        "error",
-        "Couldn’t reach the agent",
-        "Check that the submit-event function is deployed and Verify JWT is off.",
-      );
-    } finally {
-      submitButton.disabled = false;
+  /* ---------- posting: send it to the AI agent ---------- */
+  var LABELS = { published: "Published", waiting: "Waiting for a moderator", rejected: "Not posted", duplicate: "Already posted", error: "Something went wrong" };
+  function showResult(data) {
+    var box = $("postResult"), kind = data.ok ? data.status : "error";
+    box.hidden = false;
+    box.className = "result " + kind;
+    box.textContent = "";
+    box.appendChild(el("p", "result-label", LABELS[kind] || kind));
+    box.appendChild(el("p", null, data.message || ""));
+    if (data.reasons && data.reasons.length) {
+      var ul = el("ul", "reasons");
+      data.reasons.forEach(function (r) { ul.appendChild(el("li", null, r)); });
+      box.appendChild(ul);
+    }
+    if (data.event && data.status !== "rejected") {
+      var preview = el("ul", "board preview");
+      preview.appendChild(card(data.event));
+      box.appendChild(preview);
     }
   }
 
-  function setFilter(filter) {
-    state.filter = filter;
-    for (const button of elements.filterButtons) {
-      button.setAttribute("aria-pressed", button.dataset.filter === filter ? "true" : "false");
+  $("postForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var form = $("postForm"), btn = $("postBtn");
+    var photo = $("flyer").files[0];
+    if (photo && photo.size > 5 * 1024 * 1024) { showResult({ ok: false, message: "The photo must be 5 MB or smaller." }); return; }
+    btn.disabled = true;
+    btn.textContent = "The agent is reading it…";
+    // The publishable key goes on the apikey header only (never as an Authorization bearer token).
+    fetch(AGENT_URL, { method: "POST", headers: { apikey: cfg.publishableKey }, body: new FormData(form) })
+      .then(function (r) {
+        return r.json().catch(function () { return { ok: false, message: "The agent didn't answer (" + r.status + "). Is the function deployed?" }; });
+      })
+      .then(function (data) {
+        showResult(data);
+        if (data.ok) { form.reset(); loadBoard(); }
+      })
+      .catch(function () { showResult({ ok: false, message: "Couldn't reach the agent. Check your internet connection and the Project URL in config.js." }); })
+      .then(function () { btn.disabled = false; btn.textContent = "Post it"; });
+  });
+  $("refreshBtn").addEventListener("click", loadBoard);
+
+  // Say who drafts the cards (a quick check that doesn't call the AI).
+  fetch(AGENT_URL, { headers: { apikey: cfg.publishableKey } })
+    .then(function (r) { return r.json(); })
+    .then(function (d) { if (d && d.ai) $("aiNote").textContent = "Event cards are drafted by an AI agent, " + d.ai + ", and checked against the posting rules."; })
+    .catch(function () { /* the website still works without this note */ });
+
+  /* ---------- moderator sign-in ---------- */
+  var session = null;
+  function renderMod() {
+    $("signInForm").hidden = Boolean(session);
+    $("modArea").hidden = !session;
+    if (session) {
+      $("modWho").textContent = session.user.email;
+      loadWaiting();
     }
-    renderEvents();
   }
-
-  function init() {
-    elements.postForm = document.getElementById("post-form");
-    elements.announcement = document.getElementById("announcement");
-    elements.flyer = document.getElementById("flyer");
-    elements.submitPost = document.getElementById("submit-post");
-    elements.postResult = document.getElementById("post-result");
-    elements.refreshEvents = document.getElementById("refresh-events");
-    elements.boardStatus = document.getElementById("board-status");
-    elements.eventBoard = document.getElementById("event-board");
-    elements.filterButtons = Array.from(document.querySelectorAll("[data-filter]"));
-    elements.moderatorSignedOut = document.getElementById("moderator-signed-out");
-    elements.moderatorSignedIn = document.getElementById("moderator-signed-in");
-    elements.moderatorSigninForm = document.getElementById("moderator-signin-form");
-    elements.moderatorEmail = document.getElementById("moderator-email");
-    elements.moderatorPassword = document.getElementById("moderator-password");
-    elements.moderatorSignin = document.getElementById("moderator-signin");
-    elements.moderatorSignout = document.getElementById("moderator-signout");
-    elements.moderatorStatus = document.getElementById("moderator-status");
-    elements.moderatorUser = document.getElementById("moderator-user");
-    elements.waitingBoard = document.getElementById("waiting-board");
-
-    elements.postForm.addEventListener("submit", submitAnnouncement);
-    elements.refreshEvents.addEventListener("click", loadEvents);
-    elements.moderatorSigninForm.addEventListener("submit", signInModerator);
-    elements.moderatorSignout.addEventListener("click", signOutModerator);
-    for (const button of elements.filterButtons) {
-      button.addEventListener("click", () => setFilter(button.dataset.filter || "all"));
-    }
-
-    try {
-      if (!window.supabase || !config.supabaseUrl || !config.publishableKey) {
-        throw new Error("Supabase configuration is missing.");
-      }
-      supabaseClient = window.supabase.createClient(config.supabaseUrl, config.publishableKey);
-    } catch (error) {
-      console.error("Could not connect to Supabase", error);
-      setBoardStatus("The website is not configured yet.");
-      renderEvents("Events are unavailable until the website is configured.");
-      return;
-    }
-
-    loadEvents();
-    initModerator();
+  function review(ev, status) {
+    db.from("events")
+      .update({ status: status, reviewed_at: new Date().toISOString(), reviewed_by: session.user.email })
+      .eq("id", ev.id)
+      .then(function (res) {
+        if (res.error) { $("waitingStatus").textContent = "Couldn't save that: " + res.error.message; return; }
+        loadWaiting();
+        loadBoard();
+      });
   }
+  function loadWaiting() {
+    $("waitingStatus").textContent = "Loading…";
+    db.from("events").select("*").eq("status", "waiting").order("created_at", { ascending: true })
+      .then(function (res) {
+        var list = $("waitingList");
+        list.textContent = "";
+        if (res.error) { $("waitingStatus").textContent = "Couldn't load waiting posts: " + res.error.message; return; }
+        res.data.forEach(function (ev) {
+          var box = el("div", "review");
+          if (ev.status_reason) box.appendChild(el("p", "why", "Why it's waiting: " + ev.status_reason));
+          box.appendChild(el("p", "original", "Original post: " + ev.announcement));
+          var approve = el("button", null, "Approve");
+          var reject = el("button", "ghost", "Reject");
+          approve.type = reject.type = "button";
+          approve.addEventListener("click", function () { review(ev, "published"); });
+          reject.addEventListener("click", function () { review(ev, "rejected"); });
+          var row = el("p", "actions");
+          row.appendChild(approve);
+          row.appendChild(reject);
+          box.appendChild(row);
+          list.appendChild(card(ev, box));
+        });
+        $("waitingStatus").textContent = res.data.length ? res.data.length + " waiting" : "Nothing is waiting. Nice work.";
+      });
+  }
+  $("signInForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    $("signInMsg").textContent = "Signing in…";
+    db.auth.signInWithPassword({ email: $("modEmail").value.trim(), password: $("modPassword").value })
+      .then(function (res) {
+        $("modPassword").value = "";
+        // Show Supabase's own reason, such as "Invalid login credentials", so problems are easy to spot.
+        $("signInMsg").textContent = res.error ? "Sign-in didn't work: " + res.error.message : "";
+      })
+      .catch(function () { $("signInMsg").textContent = "Supabase couldn't be reached. Check your internet connection and try again."; });
+  });
+  $("signOutBtn").addEventListener("click", function () { db.auth.signOut(); });
+  db.auth.onAuthStateChange(function (_event, s) { session = s; renderMod(); });
+  db.auth.getSession().then(function (res) {
+    session = res.data.session;
+    if (session) $("modBox").open = true;
+    renderMod();
+  });
 
-  document.addEventListener("DOMContentLoaded", init);
+  loadBoard();
 })();
