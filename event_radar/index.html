@@ -66,6 +66,38 @@
     </section>
   </main>
 
+  <div class="wrap">
+    <details class="card mod">
+      <summary>Moderator sign-in</summary>
+
+      <div id="moderator-signed-out">
+        <p class="muted">Sign in to review event posts that are waiting for approval.</p>
+        <form id="moderator-signin-form">
+          <label for="moderator-email">Email</label>
+          <input id="moderator-email" type="email" autocomplete="username" required>
+
+          <label for="moderator-password">Password</label>
+          <input id="moderator-password" type="password" autocomplete="current-password" required>
+
+          <button id="moderator-signin" type="submit">Sign in</button>
+        </form>
+      </div>
+
+      <div id="moderator-signed-in" hidden>
+        <div class="board-head">
+          <div>
+            <h3>Waiting for review</h3>
+            <p id="moderator-user" class="muted"></p>
+          </div>
+          <button id="moderator-signout" class="ghost" type="button">Sign out</button>
+        </div>
+
+        <div id="moderator-status" class="result" role="status" aria-live="polite" hidden></div>
+        <ul id="waiting-board" class="board preview" aria-live="polite"></ul>
+      </div>
+    </details>
+  </div>
+
   <footer class="wrap foot">
     <p>Club Event Radar · Built for BUS 4498</p>
   </footer>

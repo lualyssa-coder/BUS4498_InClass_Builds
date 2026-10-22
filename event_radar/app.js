@@ -25,8 +25,15 @@
     "summary",
     "flyer_url",
   ].join(", ");
+  const moderatorColumns = [
+    columns,
+    "announcement",
+    "status_reason",
+    "note_for_moderator",
+  ].join(", ");
 
   let supabaseClient = null;
+  let moderatorSession = null;
 
   const elements = {};
 
@@ -57,6 +64,15 @@
       }
       result.append(list);
     }
+  }
+
+  function setModeratorStatus(kind, label, message) {
+    const result = elements.moderatorStatus;
+    result.hidden = false;
+    result.className = `result ${kind}`;
+    result.replaceChildren();
+    result.append(makeElement("p", "result-label", label));
+    result.append(makeElement("p", "result-message", message));
   }
 
   function formatDate(dateValue) {
@@ -153,6 +169,25 @@
     return item;
   }
 
+  function createReviewCard(event) {
+    const item = createEventCard(event);
+    const review = makeElement("div", "review");
+    review.append(makeElement("p", "why", event.status_reason || "Waiting for review."));
+    review.append(makeElement("p", "original", event.announcement || "No original announcement was saved."));
+
+    const actions = makeElement("p", "actions");
+    const approveButton = makeElement("button", "", "Approve");
+    const rejectButton = makeElement("button", "ghost", "Reject");
+
+    approveButton.addEventListener("click", () => reviewEvent(event, "published", approveButton, rejectButton));
+    rejectButton.addEventListener("click", () => reviewEvent(event, "rejected", approveButton, rejectButton));
+
+    actions.append(approveButton, rejectButton);
+    review.append(actions);
+    item.querySelector(".event-body").append(review);
+    return item;
+  }
+
   function isProjectFlyerUrl(value) {
     if (!value || !config.supabaseUrl) return false;
     try {
@@ -208,6 +243,155 @@
     state.events = data || [];
     setBoardStatus(state.events.length === 1 ? "1 published event" : `${state.events.length} published events`);
     renderEvents();
+  }
+
+  async function loadWaitingEvents() {
+    if (!supabaseClient || !moderatorSession) return;
+
+    const { data, error } = await supabaseClient
+      .from("events")
+      .select(moderatorColumns)
+      .eq("status", "waiting")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Could not load waiting events", error);
+      setModeratorStatus("error", "Could not load reviews", "The waiting posts could not be loaded.");
+      elements.waitingBoard.replaceChildren();
+      return;
+    }
+
+    elements.waitingBoard.replaceChildren();
+    const waitingEvents = data || [];
+    if (waitingEvents.length === 0) {
+      elements.waitingBoard.append(makeElement("li", "empty", "No posts are waiting for review."));
+      return;
+    }
+
+    for (const event of waitingEvents) {
+      elements.waitingBoard.append(createReviewCard(event));
+    }
+  }
+
+  async function reviewEvent(event, status, approveButton, rejectButton) {
+    approveButton.disabled = true;
+    rejectButton.disabled = true;
+
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData.user) {
+      setModeratorStatus("error", "Sign-in expired", "Sign in again before reviewing posts.");
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+      return;
+    }
+
+    const statusReason = status === "published"
+      ? "Approved by moderator."
+      : "Rejected by moderator.";
+    const { error } = await supabaseClient
+      .from("events")
+      .update({
+        status,
+        status_reason: statusReason,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: userData.user.id,
+      })
+      .eq("id", event.id)
+      .eq("status", "waiting");
+
+    if (error) {
+      console.error("Could not review event", error);
+      setModeratorStatus("error", "Review failed", "The post could not be updated.");
+      approveButton.disabled = false;
+      rejectButton.disabled = false;
+      return;
+    }
+
+    setModeratorStatus(
+      status === "published" ? "published" : "rejected",
+      status === "published" ? "Approved" : "Rejected",
+      status === "published" ? "The event is now on the public website." : "The event will not appear on the public website.",
+    );
+    await loadWaitingEvents();
+    await loadEvents();
+  }
+
+  function showModeratorSignedOut() {
+    elements.moderatorSignedOut.hidden = false;
+    elements.moderatorSignedIn.hidden = true;
+    elements.moderatorUser.textContent = "";
+    elements.waitingBoard.replaceChildren();
+  }
+
+  async function showModeratorSignedIn(session) {
+    moderatorSession = session;
+    elements.moderatorSignedOut.hidden = true;
+    elements.moderatorSignedIn.hidden = false;
+    elements.moderatorUser.textContent = session.user.email || "Signed in moderator";
+    await loadWaitingEvents();
+  }
+
+  async function signInModerator(event) {
+    event.preventDefault();
+    const email = elements.moderatorEmail.value.trim();
+    const password = elements.moderatorPassword.value;
+
+    if (!email || !password) {
+      setModeratorStatus("error", "Add your sign-in", "Enter your moderator email and password.");
+      return;
+    }
+
+    elements.moderatorSignin.disabled = true;
+    setModeratorStatus("waiting", "Signing in…", "Checking your moderator account.");
+
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    elements.moderatorSignin.disabled = false;
+
+    if (error || !data.session) {
+      console.error("Could not sign in moderator", error);
+      setModeratorStatus("error", "Sign-in failed", "Check the email and password, then try again.");
+      return;
+    }
+
+    elements.moderatorPassword.value = "";
+    await showModeratorSignedIn(data.session);
+  }
+
+  async function signOutModerator() {
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+      console.error("Could not sign out moderator", error);
+      setModeratorStatus("error", "Sign-out failed", "Try signing out again.");
+      return;
+    }
+
+    moderatorSession = null;
+    showModeratorSignedOut();
+  }
+
+  async function initModerator() {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) {
+      console.error("Could not check moderator session", error);
+      showModeratorSignedOut();
+      return;
+    }
+
+    if (data.session) {
+      await showModeratorSignedIn(data.session);
+    } else {
+      showModeratorSignedOut();
+    }
+
+    supabaseClient.auth.onAuthStateChange((_event, session) => {
+      moderatorSession = session;
+      if (!session) {
+        showModeratorSignedOut();
+        return;
+      }
+
+      window.setTimeout(() => showModeratorSignedIn(session), 0);
+    });
   }
 
   async function submitAnnouncement(event) {
@@ -309,9 +493,21 @@
     elements.boardStatus = document.getElementById("board-status");
     elements.eventBoard = document.getElementById("event-board");
     elements.filterButtons = Array.from(document.querySelectorAll("[data-filter]"));
+    elements.moderatorSignedOut = document.getElementById("moderator-signed-out");
+    elements.moderatorSignedIn = document.getElementById("moderator-signed-in");
+    elements.moderatorSigninForm = document.getElementById("moderator-signin-form");
+    elements.moderatorEmail = document.getElementById("moderator-email");
+    elements.moderatorPassword = document.getElementById("moderator-password");
+    elements.moderatorSignin = document.getElementById("moderator-signin");
+    elements.moderatorSignout = document.getElementById("moderator-signout");
+    elements.moderatorStatus = document.getElementById("moderator-status");
+    elements.moderatorUser = document.getElementById("moderator-user");
+    elements.waitingBoard = document.getElementById("waiting-board");
 
     elements.postForm.addEventListener("submit", submitAnnouncement);
     elements.refreshEvents.addEventListener("click", loadEvents);
+    elements.moderatorSigninForm.addEventListener("submit", signInModerator);
+    elements.moderatorSignout.addEventListener("click", signOutModerator);
     for (const button of elements.filterButtons) {
       button.addEventListener("click", () => setFilter(button.dataset.filter || "all"));
     }
@@ -329,6 +525,7 @@
     }
 
     loadEvents();
+    initModerator();
   }
 
   document.addEventListener("DOMContentLoaded", init);
