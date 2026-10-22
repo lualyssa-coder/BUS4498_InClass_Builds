@@ -347,9 +347,13 @@
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
     elements.moderatorSignin.disabled = false;
 
-    if (error || !data.session) {
+    if (error || !data?.session) {
       console.error("Could not sign in moderator", error);
-      setModeratorStatus("error", "Sign-in failed", "Check the email and password, then try again.");
+      setModeratorStatus(
+        "error",
+        "Sign-in failed",
+        error?.message || "Supabase did not return a signed-in session.",
+      );
       return;
     }
 
