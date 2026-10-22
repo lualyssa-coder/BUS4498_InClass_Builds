@@ -6,6 +6,8 @@
     events: [],
     filter: "all",
   };
+  const MAX_FLYER_SIZE = 5 * 1024 * 1024;
+  const FLYER_TYPES = new Set(["image/jpeg", "image/png"]);
 
   const columns = [
     "id",
@@ -21,6 +23,7 @@
     "cost",
     "free_food",
     "summary",
+    "flyer_url",
   ].join(", ");
 
   let supabaseClient = null;
@@ -137,7 +140,30 @@
     if (tags.childElementCount > 0) body.append(tags);
 
     item.append(body);
+
+    if (isProjectFlyerUrl(event.flyer_url)) {
+      const flyer = makeElement("img", "flyer");
+      flyer.src = event.flyer_url;
+      flyer.alt = `${event.title || "Event"} flyer`;
+      flyer.loading = "lazy";
+      flyer.decoding = "async";
+      item.append(flyer);
+    }
+
     return item;
+  }
+
+  function isProjectFlyerUrl(value) {
+    if (!value || !config.supabaseUrl) return false;
+    try {
+      const imageUrl = new URL(value);
+      const projectUrl = new URL(config.supabaseUrl);
+      return imageUrl.protocol === "https:" &&
+        imageUrl.origin === projectUrl.origin &&
+        imageUrl.pathname.startsWith("/storage/v1/object/public/flyers/");
+    } catch {
+      return false;
+    }
   }
 
   function renderEvents(emptyMessage = "No published events yet. Post the first one!") {
@@ -194,6 +220,12 @@
       return;
     }
 
+    const flyer = elements.flyer.files[0] || null;
+    if (flyer && (!FLYER_TYPES.has(flyer.type) || flyer.size < 1 || flyer.size > MAX_FLYER_SIZE)) {
+      setResult("error", "Check the flyer", "Choose a JPG or PNG flyer no larger than 5 MB.");
+      return;
+    }
+
     if (!config.supabaseUrl || !config.publishableKey) {
       setResult("error", "Website not configured", "The Supabase Project URL or publishable key is missing.");
       return;
@@ -205,6 +237,7 @@
 
     const formData = new FormData();
     formData.append("announcement", announcement);
+    if (flyer) formData.append("flyer", flyer, flyer.name);
 
     try {
       const response = await fetch(`${config.supabaseUrl}/functions/v1/submit-event`, {
@@ -269,6 +302,7 @@
   function init() {
     elements.postForm = document.getElementById("post-form");
     elements.announcement = document.getElementById("announcement");
+    elements.flyer = document.getElementById("flyer");
     elements.submitPost = document.getElementById("submit-post");
     elements.postResult = document.getElementById("post-result");
     elements.refreshEvents = document.getElementById("refresh-events");
