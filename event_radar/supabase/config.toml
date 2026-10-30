@@ -2,3 +2,13 @@
 # The website calls the AI agent with the publishable key, which isn't a JWT, so JWT verification is off.
 [functions.submit-event]
 verify_jwt = false
+
+# The chat-channel readers (Stage 14) are called by a scheduled job and by the chat app, with no sign-in token.
+[functions.read-channel]
+verify_jwt = false
+
+[functions.read-discord]
+verify_jwt = false
+
+[functions.read-slack]
+verify_jwt = false

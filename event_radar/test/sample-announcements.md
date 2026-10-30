@@ -6,9 +6,9 @@ Post them one at a time, from the builder's test buttons or from your website. "
 
 ## A. A clean post
 
-> Board Game Guild: Game Night! Thursday, October 29, 7 to 10 pm in the University Union, Room 220. Free entry and free pizza while it lasts. All skill levels welcome, and we'll teach every game.
+> Board Game Guild: Game Night! Thursday, November 5, 7 to 10 pm in the University Union, Room 220. Free entry and free pizza while it lasts. All skill levels welcome, and we'll teach every game.
 
-**Expected:** Published. Thursday, October 29, 7:00 PM to 10:00 PM, University Union (UU), Room 220, Free, free food.
+**Expected:** Published. Thursday, November 5, 7:00 PM to 10:00 PM, University Union (UU), Room 220, Free, free food.
 
 ## B. A messy group-chat post
 
@@ -18,7 +18,7 @@ Post them one at a time, from the builder's test buttons or from your website. "
 
 ## C. The same event as A, reworded by another officer
 
-> Reminder from the Board Game Guild officers: game night is Thursday 10/29 at 7pm in UU 220. Pizza's on us! 🎲
+> Reminder from the Board Game Guild officers: game night is Thursday 11/5 at 7pm in UU 220. Pizza's on us! 🎲
 
 **Expected:** Already posted. Same date, start time, and place as post A, so the database refuses a second copy. Post A first.
 
@@ -52,4 +52,4 @@ Use `sample-flyer.png` with this text:
 
 > Clothing swap next week, all the details are on the flyer!
 
-**Expected:** Waiting for a moderator, because posts with a photo are checked first (R9). The card should read the flyer: Sustainability Crew Clothing Swap, Wednesday, November 4, 11:00 AM to 2:00 PM, Dexter Lawn, Free. After a moderator approves it, it appears on the website with the photo.
+**Expected:** Waiting for a moderator, because posts with a photo are checked first (R9). The card should read the flyer: Sustainability Crew Clothing Swap, Wednesday, November 11, 11:00 AM to 2:00 PM, Dexter Lawn, Free. After a moderator approves it, it appears on the website with the photo.

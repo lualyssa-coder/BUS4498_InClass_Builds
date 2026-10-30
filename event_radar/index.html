@@ -3,26 +3,62 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Club Event Radar</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<header class="top">
-  <div class="wrap">
-    <p class="kicker">Campus clubs · practice website</p>
-    <h1>Club Event Radar</h1>
-    <p class="lede">Paste a club announcement. An AI agent turns it into an event card, checks the posting rules, and catches duplicates.</p>
-    <ul class="badges">
-      <li>🤖 Cards drafted by an AI agent</li>
-      <li>✅ Checked against posting rules</li>
-      <li>🧑‍⚖️ Unclear posts go to a moderator</li>
-    </ul>
+<header class="topbar">
+  <div class="wrap bar">
+    <a class="brand" href="#top"><span class="logo" aria-hidden="true"></span>Club Event Radar</a>
+    <nav class="actions" aria-label="Site actions">
+      <span class="live" id="live" title="The board updates by itself"><span class="dot" aria-hidden="true"></span>Live</span>
+      <button type="button" class="ghost small" id="openPost">+ Post<span class="long"> an event</span></button>
+      <button type="button" class="ghost small" id="openMod">Moderator</button>
+    </nav>
   </div>
 </header>
 
-<main class="wrap layout">
-  <section class="card post" aria-labelledby="postTitle">
-    <h2 id="postTitle">Post an event</h2>
+<section class="hero" id="top">
+  <div class="wrap">
+    <p class="kicker">Campus clubs · live board</p>
+    <h1>What’s happening <em>on campus</em></h1>
+    <p class="lede">Clubs post in their chat. An AI agent turns each post into a card, checks the posting rules, and remembers what it already posted.</p>
+    <ul class="stats" aria-label="Board summary">
+      <li><b id="statCount">0</b><span>events</span></li>
+      <li><b id="statWeek">0</b><span>this week</span></li>
+      <li><b id="statFood">0</b><span>with free food</span></li>
+    </ul>
+  </div>
+</section>
+
+<main class="wrap" id="main">
+  <div class="toolbar">
+    <div class="filters" id="filters" role="group" aria-label="Show">
+      <button type="button" class="chip" data-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="chip" data-filter="week" aria-pressed="false">This week</button>
+      <button type="button" class="chip" data-filter="food" aria-pressed="false">🍕 Free food</button>
+      <button type="button" class="chip" data-filter="online" aria-pressed="false">Online</button>
+    </div>
+    <button type="button" class="ghost small" id="refreshBtn">Refresh</button>
+  </div>
+  <p id="boardStatus" class="muted status" role="status" aria-live="polite"></p>
+  <div id="board" class="board"></div>
+</main>
+
+<footer class="wrap foot">
+  <p>A practice website for BUS 4498 · Dr. Bingyi Wu, Cal Poly. The clubs and events are made up. <span id="aiNote"></span></p>
+</footer>
+
+<!-- Post an event: an add-on, folded into the menu. Most posts arrive from the club chat. -->
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="postDrawer" aria-labelledby="postTitle" hidden>
+  <div class="panel">
+    <header class="panel-head">
+      <h2 id="postTitle">Post an event</h2>
+      <button type="button" class="close" data-close="postDrawer" aria-label="Close">✕</button>
+    </header>
+    <p class="muted">Most posts come straight from the club chat. Use this when you want to post by hand.</p>
     <form id="postForm">
       <label for="announcement">Announcement <span class="hint">Paste the Instagram caption, group-chat message, or flyer text.</span></label>
       <textarea id="announcement" name="announcement" rows="6" maxlength="2000" required placeholder="Board Game Guild: Game Night! Thursday, 7 to 10 pm in the University Union, Room 220. Free pizza!"></textarea>
@@ -31,39 +67,57 @@
       <button type="submit" id="postBtn">Post it</button>
     </form>
     <div id="postResult" class="result" role="status" aria-live="polite" hidden></div>
-  </section>
+  </div>
+</aside>
 
-  <section class="board-section" aria-labelledby="boardTitle">
-    <div class="board-head">
-      <h2 id="boardTitle">Coming up</h2>
-      <button type="button" class="ghost" id="refreshBtn">Refresh</button>
-    </div>
-    <p id="boardStatus" class="muted" role="status"></p>
-    <ul id="board" class="board"></ul>
-
-    <details class="card mod" id="modBox">
-      <summary>Moderator sign-in</summary>
-      <form id="signInForm">
-        <label for="modEmail">Email</label>
-        <input id="modEmail" type="email" autocomplete="username" required>
-        <label for="modPassword">Password</label>
-        <input id="modPassword" type="password" autocomplete="current-password" required>
-        <button type="submit" id="signInBtn">Sign in</button>
-        <p id="signInMsg" class="muted" role="status"></p>
-      </form>
-      <div id="modArea" hidden>
-        <p>Signed in as <b id="modWho"></b>. <button type="button" class="ghost" id="signOutBtn">Sign out</button></p>
-        <h3>Waiting for review</h3>
-        <p id="waitingStatus" class="muted" role="status"></p>
-        <ul id="waitingList" class="board"></ul>
+<!-- Moderator: sign-in, the review queue, the agent's lessons, and the board tools. Visitors never see this. -->
+<aside class="drawer" id="modDrawer" aria-labelledby="modTitle" hidden>
+  <div class="panel">
+    <header class="panel-head">
+      <h2 id="modTitle">Moderator</h2>
+      <button type="button" class="close" data-close="modDrawer" aria-label="Close">✕</button>
+    </header>
+    <form id="signInForm">
+      <label for="modEmail">Email</label>
+      <input id="modEmail" type="email" autocomplete="username" required>
+      <label for="modPassword">Password</label>
+      <input id="modPassword" type="password" autocomplete="current-password" required>
+      <button type="submit" id="signInBtn">Sign in</button>
+      <p id="signInMsg" class="muted" role="status"></p>
+    </form>
+    <div id="modArea" hidden>
+      <p class="who">Signed in as <b id="modWho"></b> <button type="button" class="ghost small" id="signOutBtn">Sign out</button></p>
+      <div class="tabs" role="tablist" aria-label="Moderator sections">
+        <button type="button" class="tab" role="tab" data-tab="waiting" aria-selected="true">Waiting <span class="count" id="waitingCount">0</span></button>
+        <button type="button" class="tab" role="tab" data-tab="lessons" aria-selected="false">Lessons <span class="count" id="lessonsCount">0</span></button>
+        <button type="button" class="tab" role="tab" data-tab="tools" aria-selected="false">Tools</button>
       </div>
-    </details>
-  </section>
-</main>
+      <section class="tabpanel" data-panel="waiting">
+        <p id="waitingStatus" class="muted" role="status"></p>
+        <ul id="waitingList" class="queue"></ul>
+      </section>
+      <section class="tabpanel" data-panel="lessons" hidden>
+        <p class="muted">The agent reads every lesson that is switched on, with every post. Switch one off to make it forget.</p>
+        <form id="teachForm" class="teach">
+          <label for="lessonText">Teach the agent something <span class="hint">One sentence. A lesson can make a post wait or shape the card. It can’t cancel a posting rule.</span></label>
+          <textarea id="lessonText" rows="2" maxlength="300" required placeholder="Drop-in study hours, tutoring, and office hours aren’t events for this website. Hold them for a moderator."></textarea>
+          <button type="submit" id="teachBtn">Save the lesson</button>
+          <p id="teachMsg" class="muted" role="status"></p>
+        </form>
+        <p id="lessonsStatus" class="muted" role="status"></p>
+        <ul id="lessonsList" class="lessons"></ul>
+      </section>
+      <section class="tabpanel" data-panel="tools" hidden>
+        <h3>Clear the board</h3>
+        <p class="muted">Deletes every post, published or not. The club list and the lessons stay. Use it to start a demo clean.</p>
+        <button type="button" class="danger" id="clearBtn">Clear the board…</button>
+        <p id="toolsMsg" class="muted" role="status"></p>
+      </section>
+    </div>
+  </div>
+</aside>
 
-<footer class="wrap foot">
-  <p>A practice website for BUS 4498. The clubs and events are made up. <span id="aiNote"></span></p>
-</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <script src="config.js"></script>
